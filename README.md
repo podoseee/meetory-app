@@ -49,27 +49,14 @@ pnpm dev
 ```
 meetory-app/
 ├── app/                          # 앱 화면 (Expo Router)
-│   ├── (auth)/                   # 인증 플로우
-│   │   ├── login.tsx             # 로그인 화면
-│   │   ├── terms.tsx             # 약관 동의
-│   │   ├── profile-setup.tsx     # 프로필 설정
-│   │   ├── interests.tsx         # 관심사 선택
-│   │   ├── welcome.tsx           # 환영 화면
-│   │   ├── chatrooms-ready.tsx   # 채팅방 준비
-│   │   └── _layout.tsx           # 인증 레이아웃
-│   ├── (tabs)/                   # 메인 탭 화면
-│   │   ├── footprint.tsx         # 발자취
-│   │   ├── matching.tsx          # 매칭
-│   │   ├── chat.tsx              # 채팅방 목록
-│   │   ├── bluetooth.tsx         # 블루투스
-│   │   ├── profile.tsx           # 프로필
-│   │   ├── index.tsx             # 탭 인덱스
-│   │   └── _layout.tsx           # 탭 네비게이션
-│   ├── chat/[id].tsx             # 채팅방 상세
-│   ├── matching/[id].tsx         # 매칭 상세
-│   ├── index.tsx                 # 루트 라우팅
-│   ├── _layout.tsx               # 루트 레이아웃
-│   └── oauth/callback.tsx        # OAuth 콜백
+│   ├── (tabs)/
+│   │   ├── index.tsx            # Home - 매칭 & 채팅
+│   │   ├── footprint.tsx        # Footprint - 발자취
+│   │   ├── profile.tsx          # Profile - 프로필
+│   │   └── _layout.tsx          # 탭 네비게이션
+│   ├── chat.tsx                 # 채팅방 화면
+│   ├── onboarding.tsx           # 온보딩 (닉네임, 관심사, 지역)
+│   └── _layout.tsx              # 루트 레이아웃
 │
 ├── server/                       # 백엔드 (Node.js + Express)
 │   ├── _core/
@@ -81,27 +68,20 @@ meetory-app/
 │   ├── db.ts                    # 데이터베이스 쿼리
 │   └── README.md                # 백엔드 상세 문서
 │
+├── drizzle/                      # 데이터베이스 스키마
+│   ├── schema.ts                # 테이블 정의
+│   ├── migrations/              # 마이그레이션 파일
+│   └── relations.ts             # 테이블 관계
+│
 ├── components/                   # React 컴포넌트
-│   ├── meetory/                 # Meetory 브랜드 컴포넌트
-│   │   ├── meetory-logo.tsx     # 로고
-│   │   ├── primary-button.tsx   # 주요 버튼
-│   │   └── screen-footer.tsx    # 화면 푸터
 │   ├── screen-container.tsx     # SafeArea 래퍼
 │   └── ui/
 │       └── icon-symbol.tsx      # 탭 아이콘 매핑
 │
 ├── lib/                          # 유틸리티
-│   ├── meetory/
-│   │   ├── auth-context.tsx     # 인증 상태 관리
-│   │   └── constants.ts         # 상수 정의
 │   ├── trpc.ts                  # tRPC 클라이언트
 │   ├── theme-provider.tsx       # 테마 프로바이더
 │   └── utils.ts                 # 헬퍼 함수
-│
-├── drizzle/                      # 데이터베이스 스키마
-│   ├── schema.ts                # 테이블 정의
-│   ├── migrations/              # 마이그레이션 파일
-│   └── relations.ts             # 테이블 관계
 │
 ├── design.md                     # UI/UX 설계 문서
 ├── todo.md                       # 개발 체크리스트
@@ -118,7 +98,6 @@ meetory-app/
 - **Expo Router 6** — 파일 기반 라우팅
 - **NativeWind 4** — React Native에서 Tailwind CSS 사용
 - **TypeScript 5.9** — 타입 안전성
-- **Ionicons** — 아이콘 라이브러리
 
 ### 백엔드
 - **Node.js + Express** — 서버 프레임워크
@@ -134,26 +113,32 @@ meetory-app/
 
 ## 🎯 주요 화면
 
-### 1️⃣ 인증 플로우 (Auth)
-- **로그인** — 소셜 로그인 (카카오, Google, Apple)
-- **약관 동의** — 이용약관 및 개인정보처리방침
-- **프로필 설정** — 닉네임 설정
-- **관심사 선택** — 1~5개 관심사 선택
-- **환영 화면** — 시작 준비 완료
-- **채팅방 준비** — 매칭 대기
+### 1️⃣ 온보딩 (Onboarding)
+- 닉네임 설정 (2~20자)
+- 관심사 선택 (1~5개)
+- 지역 선택 (강남, 홍대, 건대 등)
 
-### 2️⃣ 메인 탭 (Tabs)
-- **발자취** — 관심사별 인기 장소 및 체크인 기록
-- **매칭** — 새로운 그룹 매칭 시작
-- **채팅방** — 활성 채팅방 목록
-- **블루투스** — 근처 사용자 발견 (선택)
-- **프로필** — 사용자 정보 및 설정
+### 2️⃣ Home - 매칭 & 채팅
+- **매칭 시작** 버튼으로 관심사 + 지역 기반 그룹 생성
+- 활성 채팅방 목록 표시
+- 각 채팅방 진입 가능
 
-### 3️⃣ 채팅 (Chat)
-- **채팅방 상세** — 실시간 메시지 송수신
-- **참여자 정보** — 그룹 멤버 프로필
-- **AI 조언** — 대화 주제 제안
-- **채팅방 관리** — 나가기, 신고, 차단
+### 3️⃣ Chat Room - 실시간 채팅
+- 메시지 송수신
+- 참여자 프로필 확인
+- **💡 AI 조언** 버튼으로 대화 주제 제안
+- 채팅방 나가기 / 재매칭
+
+### 4️⃣ Footprint - 발자취
+- 관심사별 **인기 장소 TOP 3** 표시
+- **체크인** 기능으로 방문 기록
+- 내 체크인 히스토리 조회
+
+### 5️⃣ Profile - 프로필 & 설정
+- 닉네임, 관심사, 지역 정보
+- 체크인 통계
+- 차단 사용자 관리
+- 로그아웃
 
 ---
 
@@ -273,7 +258,6 @@ export default function MyComponent() {
 - [x] 데이터베이스 스키마 설계
 - [x] 백엔드 API 구현
 - [x] 프론트엔드 UI 화면
-- [x] 인증 플로우 (로그인, 약관, 프로필)
 - [ ] 실시간 메시지 기능
 - [ ] 프로필 생성 API 연동
 
