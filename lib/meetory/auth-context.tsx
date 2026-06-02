@@ -22,12 +22,8 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
-const defaultProfile: UserProfile = {
-  nickname: "pododang_dodang",
-  avatarEmoji: "🦊",
-  interests: ["콘서트", "카페", "맛집"],
-  marketingAgreed: false,
-};
+// 기본 프로필 제거 - 사용자가 로그인부터 시작하도록
+const defaultProfile: UserProfile | null = null;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -53,11 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoggedIn(true);
           setOnboardingStep("done");
           if (profileRaw) setProfile(JSON.parse(profileRaw) as UserProfile);
-          else setProfile(defaultProfile);
           setChatRooms(roomsRaw ? (JSON.parse(roomsRaw) as ChatRoom[]) : DEFAULT_CHAT_ROOMS);
         } else if (stepRaw) {
           setIsLoggedIn(true);
           setOnboardingStep(stepRaw as OnboardingStep);
+        } else {
+          // 저장된 상태가 없으면 로그인 화면부터 시작
+          setOnboardingStep("login");
         }
 
         if (btRaw !== null) setBluetoothEnabledState(btRaw === "true");
@@ -80,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const acceptTerms = useCallback(
     (marketing: boolean) => {
       setProfile((p) => ({
-        ...(p ?? defaultProfile),
+        nickname: p?.nickname ?? "",
+        avatarEmoji: p?.avatarEmoji ?? "😊",
+        interests: p?.interests ?? [],
         marketingAgreed: marketing,
       }));
       void persistStep("profile");
@@ -89,18 +89,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const saveProfile = useCallback((nickname: string, avatarEmoji: string) => {
-    setProfile((p) => ({
-      ...(p ?? defaultProfile),
+    setProfile({
       nickname,
       avatarEmoji,
-    }));
+      interests: [],
+      marketingAgreed: false,
+    });
     void persistStep("interests");
   }, [persistStep]);
 
   const saveInterests = useCallback(
     async (interests: string[]) => {
+      if (!profile) return;
       const next: UserProfile = {
-        ...(profile ?? defaultProfile),
+        ...profile,
         interests,
       };
       setProfile(next);

@@ -55,6 +55,11 @@ export const FOOTPRINT_PLACES: FootprintPlace[] = [
   { id: "p1", name: "성수 카페거리", category: "카페", visitedAt: "오늘" },
   { id: "p2", name: "한강공원", category: "운동", visitedAt: "어제" },
   { id: "p3", name: "강남 맛집골목", category: "맛집", visitedAt: "3일 전" },
+  { id: "p4", name: "홍대 문화거리", category: "문화", visitedAt: "4일 전" },
+  { id: "p5", name: "명동 쇼핑거리", category: "쇼핑", visitedAt: "5일 전" },
+  { id: "p6", name: "강남역 카페", category: "카페", visitedAt: "1주일 전" },
+  { id: "p7", name: "서촌 갤러리", category: "문화", visitedAt: "1주일 전" },
+  { id: "p8", name: "이태원 국제음식", category: "맛집", visitedAt: "2주일 전" },
 ];
 
 export function getChatMessages(roomId: string): ChatMessage[] {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View, Alert } from "react-native";
 import { useRouter } from "expo-router";
 
 import { ScreenFooter } from "@/components/meetory/screen-footer";
@@ -16,7 +16,16 @@ export default function ProfileSetupScreen() {
   const [avatar, setAvatar] = useState<string>(AVATAR_EMOJIS[0]);
 
   const handleNext = () => {
-    saveProfile(nickname.trim(), avatar);
+    const trimmedNickname = nickname.trim();
+    if (trimmedNickname.length < 2) {
+      Alert.alert(
+        "닉네임 입력 오류",
+        "닉네임은 최소 2자 이상이어야 합니다.",
+        [{ text: "확인", onPress: () => {} }]
+      );
+      return;
+    }
+    saveProfile(trimmedNickname, avatar);
     router.push("/(auth)/interests");
   };
 
