@@ -13,6 +13,12 @@ export default function ChatListScreen() {
 
   const handleMatch = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push("/(tabs)/matching");
+  };
+
+  const handleCreateRoom = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/(tabs)/matching");
   };
 
   return (
@@ -65,7 +71,7 @@ export default function ChatListScreen() {
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity className="mt-4 py-3 items-center">
+        <TouchableOpacity className="mt-4 py-3 items-center" onPress={handleCreateRoom}>
           <Text className="text-primary font-semibold">+ 새 채팅방 만들기</Text>
         </TouchableOpacity>
       </ScrollView>

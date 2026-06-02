@@ -55,22 +55,55 @@ export default function BluetoothScreen() {
       </View>
 
       {bluetoothEnabled ? (
-        <View className="flex-1 items-center justify-center">
-          <View className="w-56 h-56 items-center justify-center">
-            <Animated.View
-              style={ringStyle}
-              className="absolute w-56 h-56 rounded-full border-2 border-primary/30"
-            />
-            <Animated.View
-              style={ringStyle}
-              className="absolute w-40 h-40 rounded-full border-2 border-primary/40"
-            />
-            <View className="w-20 h-20 rounded-full bg-primary items-center justify-center">
-              <Text className="text-3xl">📍</Text>
+        <>
+          <View className="flex-1 items-center justify-center">
+            <View className="w-56 h-56 items-center justify-center">
+              <Animated.View
+                style={ringStyle}
+                className="absolute w-56 h-56 rounded-full border-2 border-primary/30"
+              />
+              <Animated.View
+                style={ringStyle}
+                className="absolute w-40 h-40 rounded-full border-2 border-primary/40"
+              />
+              <View className="w-20 h-20 rounded-full bg-primary items-center justify-center">
+                <Text className="text-3xl">📍</Text>
+              </View>
             </View>
+            <Text className="text-muted mt-8 text-center">주변 사람을 찾는 중...</Text>
           </View>
-          <Text className="text-muted mt-8 text-center">주변 사람을 찾는 중...</Text>
-        </View>
+
+          {/* 테스트용 위치 감지 버튼 */}
+          <View className="mb-4">
+            <Text className="text-xs font-semibold text-muted mb-2">테스트: 위치 감지</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="gap-2">
+              {PREDEFINED_LOCATIONS.map((location, index) => (
+                <TouchableOpacity
+                  key={location.id}
+                  onPress={() => handleSimulateLocation(index)}
+                  className="bg-surface rounded-lg p-3 min-w-[100px] items-center gap-1"
+                >
+                  <Ionicons
+                    name={
+                      location.category === "콘서트"
+                        ? "musical-notes"
+                        : location.category === "서점"
+                          ? "book"
+                          : location.category === "도서관"
+                            ? "library"
+                            : location.category === "카페"
+                              ? "cafe"
+                              : "location"
+                    }
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text className="text-[10px] text-foreground text-center">{location.category}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </>
       ) : (
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-muted text-center leading-6">

@@ -45,7 +45,13 @@ export default function MatchingDetailScreen() {
       </ScrollView>
 
       <View className="py-4">
-        <PrimaryButton label="채팅 요청하기" onPress={() => router.back()} />
+        <PrimaryButton
+          label="채팅 요청하기"
+          onPress={() => {
+            // 채팅방 생성 후 채팅 화면으로 이동
+            router.push("/chat/1");
+          }}
+        />
       </View>
     </ScreenContainer>
   );
