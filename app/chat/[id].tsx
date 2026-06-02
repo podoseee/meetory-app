@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { AIAssistant } from "@/components/meetory/ai-assistant";
 import { AI_SUGGESTIONS, getChatMessages, getRoomName } from "@/lib/meetory/mock-data";
 import type { ChatMessage } from "@/lib/meetory/types";
 import { useColors } from "@/hooks/use-colors";
@@ -25,6 +26,7 @@ export default function ChatDetailScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatMessages(roomId));
   const [input, setInput] = useState("");
   const [aiTip, setAiTip] = useState<string | null>(null);
+  const [showAI, setShowAI] = useState(false);
   const listRef = useRef<FlatList>(null);
 
   const send = async () => {
@@ -46,6 +48,7 @@ export default function ChatDetailScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const tip = AI_SUGGESTIONS[Math.floor(Math.random() * AI_SUGGESTIONS.length)];
     setAiTip(tip);
+    setShowAI(true);
   };
 
   const renderItem = ({ item }: { item: ChatMessage }) => (
@@ -69,6 +72,11 @@ export default function ChatDetailScreen() {
 
   return (
     <ScreenContainer edges={["top", "left", "right"]} className="flex-1">
+      <AIAssistant
+        message={aiTip || ""}
+        visible={showAI && !!aiTip}
+        onClose={() => setShowAI(false)}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 px-4"
@@ -92,15 +100,7 @@ export default function ChatDetailScreen() {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         />
 
-        {aiTip ? (
-          <View className="bg-primary/10 rounded-xl p-3 mb-2">
-            <Text className="text-xs font-semibold text-primary mb-1">AI 조력자 조언</Text>
-            <Text className="text-sm text-foreground">{aiTip}</Text>
-            <TouchableOpacity onPress={() => setInput(aiTip)} className="mt-2">
-              <Text className="text-xs text-primary font-semibold">입력창에 넣기</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+
 
         <View className="flex-row items-center gap-2 pb-4 pt-2 border-t border-border">
           <TextInput

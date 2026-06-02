@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Switch, Text, View, ScrollView, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -10,11 +11,19 @@ import Animated, {
 import { AppHeader } from "@/components/meetory/app-header";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/lib/meetory/auth-context";
+import { useBluetoothContext, PREDEFINED_LOCATIONS } from "@/lib/meetory/bluetooth-context";
+import { useColors } from "@/hooks/use-colors";
 
 export default function BluetoothScreen() {
   const { bluetoothEnabled, setBluetoothEnabled } = useAuth();
+  const colors = useColors();
+  const { simulateLocationDetection } = useBluetoothContext();
   const [showMatchPopup, setShowMatchPopup] = useState(false);
   const pulse = useSharedValue(1);
+
+  const handleSimulateLocation = (index: number) => {
+    simulateLocationDetection(PREDEFINED_LOCATIONS[index]);
+  };
 
   useEffect(() => {
     if (bluetoothEnabled) {
