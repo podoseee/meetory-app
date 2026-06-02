@@ -97,3 +97,27 @@ export const AI_SUGGESTIONS = [
 export function getRoomName(roomId: string): string {
   return DEFAULT_CHAT_ROOMS.find((r) => r.id === roomId)?.name ?? `채팅방 ${roomId}`;
 }
+
+export const INTERESTS = [
+  "여행",
+  "맛집",
+  "카페",
+  "콘서트",
+  "영화",
+  "독서",
+  "운동",
+  "음악",
+  "사진",
+  "요리",
+];
+
+export const LOCATIONS = [
+  "강남",
+  "홍대",
+  "건대",
+  "명동",
+  "강북",
+  "성수",
+  "연남",
+  "이태원",
+];

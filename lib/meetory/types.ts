@@ -7,9 +7,11 @@ export type OnboardingStep =
   | "chatrooms";
 
 export interface UserProfile {
+  id?: number;
   nickname: string;
   avatarEmoji: string;
   interests: string[];
+  location?: string;
   marketingAgreed: boolean;
 }
 

@@ -94,7 +94,7 @@ export default function ProfileEditScreen() {
         <View className="px-4 py-4 gap-3">
           <Text className="text-sm font-semibold text-foreground">관심사 (최대 5개)</Text>
           <View className="flex-row flex-wrap gap-2">
-            {INTERESTS.map((interest) => (
+            {INTERESTS.map((interest: string) => (
               <TagChip
                 key={interest}
                 label={interest}

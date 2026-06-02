@@ -1,5 +1,4 @@
-import ws from "ws";
-const { WebSocketServer } = ws;
+import { WebSocketServer } from "ws";
 import { Server } from "http";
 import { getDb as dbConnection } from "../db";
 import { messages } from "../../drizzle/schema";

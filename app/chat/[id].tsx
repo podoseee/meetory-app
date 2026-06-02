@@ -36,7 +36,7 @@ export default function ChatDetailScreen() {
   // WebSocket 입장
   useEffect(() => {
     if (profile) {
-      joinRoom(parseInt(roomId), profile.id || 1, profile.nickname || "익명");
+      joinRoom(parseInt(roomId), profile.id || Math.floor(Math.random() * 1000), profile.nickname || "익명");
     }
     return () => {
       leaveRoom();
