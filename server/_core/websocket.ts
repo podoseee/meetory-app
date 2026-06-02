@@ -168,7 +168,8 @@ function broadcastToRoom(chatRoomId: number, message: any) {
 
   const data = JSON.stringify(message);
   clients.forEach((client) => {
-    if (client.ws.readyState === WebSocket.OPEN) {
+    // WebSocket.OPEN = 1
+    if (client.ws.readyState === 1) {
       client.ws.send(data);
     }
   });

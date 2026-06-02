@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
+import Constants from "expo-constants";
 
 export interface ChatMessage {
   type: "message" | "user-joined" | "user-left" | "user-typing" | "error";
@@ -21,7 +23,34 @@ interface WebSocketContextType {
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
 
-export function WebSocketProvider({ children }: { children: React.ReactNode }) {
+function getWebSocketUrl(): string {
+  try {
+    // 프로덕션 환경
+    if (!__DEV__) {
+      return "wss://meetory-api.example.com/ws";
+    }
+
+    // Expo Go 환경에서 실제 IP 주소 감지
+    const debuggerHost = Constants.expoConfig?.hostUri || Constants.debuggerHost;
+    if (debuggerHost) {
+      const host = debuggerHost.split(":")[0];
+      return `ws://${host}:3000/ws`;
+    }
+
+    // 에뮬레이터 환경 (Android)
+    if (Platform.OS === "android") {
+      return "ws://10.0.2.2:3000/ws";
+    }
+
+    // 기본값 (로컬 개발)
+    return "ws://localhost:3000/ws";
+  } catch (error) {
+    console.warn("[WebSocket] URL 감지 실패, 기본값 사용:", error);
+    return "ws://localhost:3000/ws";
+  }
+}
+
+export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -30,50 +59,74 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     userId: number;
     nickname: string;
   } | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   // WebSocket 연결
   useEffect(() => {
     const connectWebSocket = () => {
       try {
-        // 개발 환경에서는 localhost:3000을 사용
-        // 프로덕션에서는 실제 서버 URL을 사용
-        const wsUrl = __DEV__
-          ? "ws://localhost:3000/ws"
-          : "wss://your-production-domain.com/ws";
+        const wsUrl = getWebSocketUrl();
+        console.log("[WebSocket] 연결 시도:", wsUrl);
 
         const webSocket = new WebSocket(wsUrl);
 
         webSocket.onopen = () => {
-          console.log("[WebSocket] Connected");
+          console.log("[WebSocket] 연결됨");
           setIsConnected(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setReconnectAttempts(0);
+          
+          // Haptics 안전하게 호출
+          if (Platform.OS !== "web") {
+            try {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (e) {
+              console.warn("[WebSocket] Haptics 호출 실패:", e);
+            }
+          }
         };
 
         webSocket.onmessage = (event) => {
           try {
-            const message: ChatMessage = JSON.parse(event.data);
+            const message = JSON.parse(event.data) as ChatMessage;
+            console.log("[WebSocket] 메시지 수신:", message);
             setMessages((prev) => [...prev, message]);
-            console.log("[WebSocket] Message received:", message);
-          } catch (err) {
-            console.error("[WebSocket] Failed to parse message:", err);
+          } catch (e) {
+            console.error("[WebSocket] 메시지 파싱 실패:", e);
           }
         };
 
         webSocket.onerror = (error) => {
-          console.error("[WebSocket] Error:", error);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          console.error("[WebSocket] 오류:", error);
+          setIsConnected(false);
+          
+          if (Platform.OS !== "web") {
+            try {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } catch (e) {
+              console.warn("[WebSocket] Haptics 호출 실패:", e);
+            }
+          }
         };
 
         webSocket.onclose = () => {
-          console.log("[WebSocket] Disconnected");
+          console.log("[WebSocket] 연결 종료");
           setIsConnected(false);
-          // 5초 후 재연결 시도
-          setTimeout(connectWebSocket, 5000);
+          
+          // 자동 재연결 (최대 5회)
+          if (reconnectAttempts < 5) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            console.log(`[WebSocket] ${delay}ms 후 재연결 시도 (${reconnectAttempts + 1}/5)`);
+            setTimeout(() => {
+              setReconnectAttempts((prev) => prev + 1);
+              connectWebSocket();
+            }, delay);
+          }
         };
 
         setWs(webSocket);
-      } catch (err) {
-        console.error("[WebSocket] Connection failed:", err);
+      } catch (error) {
+        console.error("[WebSocket] 연결 초기화 실패:", error);
+        setIsConnected(false);
       }
     };
 
@@ -84,95 +137,104 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         ws.close();
       }
     };
-  }, []);
+  }, [reconnectAttempts]);
 
-  const joinRoom = useCallback(
-    (chatRoomId: number, userId: number, nickname: string) => {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.error("[WebSocket] WebSocket not connected");
+  const sendMessage = useCallback(
+    (content: string) => {
+      if (!ws || !currentRoom) {
+        console.warn("[WebSocket] 연결 또는 채팅방 정보 없음");
         return;
       }
 
-      setCurrentRoom({ chatRoomId, userId, nickname });
-      setMessages([]);
+      try {
+        const message = {
+          type: "message",
+          chatRoomId: currentRoom.chatRoomId,
+          userId: currentRoom.userId,
+          nickname: currentRoom.nickname,
+          content,
+          timestamp: Date.now(),
+        };
+        ws.send(JSON.stringify(message));
+        console.log("[WebSocket] 메시지 전송:", message);
+      } catch (error) {
+        console.error("[WebSocket] 메시지 전송 실패:", error);
+      }
+    },
+    [ws, currentRoom]
+  );
 
-      ws.send(
-        JSON.stringify({
+  const joinRoom = useCallback(
+    (chatRoomId: number, userId: number, nickname: string) => {
+      if (!ws) {
+        console.warn("[WebSocket] 연결 없음");
+        return;
+      }
+
+      try {
+        const message = {
           type: "join",
           chatRoomId,
           userId,
           nickname,
-        })
-      );
-
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          timestamp: Date.now(),
+        };
+        ws.send(JSON.stringify(message));
+        setCurrentRoom({ chatRoomId, userId, nickname });
+        console.log("[WebSocket] 채팅방 입장:", message);
+      } catch (error) {
+        console.error("[WebSocket] 입장 실패:", error);
+      }
     },
     [ws]
   );
 
   const leaveRoom = useCallback(() => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || !currentRoom) {
-      return;
-    }
+    if (!ws || !currentRoom) return;
 
-    ws.send(
-      JSON.stringify({
+    try {
+      const message = {
         type: "leave",
         chatRoomId: currentRoom.chatRoomId,
-      })
-    );
-
-    setCurrentRoom(null);
-    setMessages([]);
+        userId: currentRoom.userId,
+        timestamp: Date.now(),
+      };
+      ws.send(JSON.stringify(message));
+      setCurrentRoom(null);
+      setMessages([]);
+      console.log("[WebSocket] 채팅방 퇴장:", message);
+    } catch (error) {
+      console.error("[WebSocket] 퇴장 실패:", error);
+    }
   }, [ws, currentRoom]);
-
-  const sendMessage = useCallback(
-    (content: string) => {
-      if (!ws || ws.readyState !== WebSocket.OPEN || !currentRoom) {
-        console.error("[WebSocket] Cannot send message: not connected or not in room");
-        return;
-      }
-
-      ws.send(
-        JSON.stringify({
-          type: "message",
-          chatRoomId: currentRoom.chatRoomId,
-          content,
-        })
-      );
-
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    },
-    [ws, currentRoom]
-  );
 
   const setTyping = useCallback(() => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || !currentRoom) {
-      return;
-    }
+    if (!ws || !currentRoom) return;
 
-    ws.send(
-      JSON.stringify({
+    try {
+      const message = {
         type: "typing",
         chatRoomId: currentRoom.chatRoomId,
-      })
-    );
+        userId: currentRoom.userId,
+        nickname: currentRoom.nickname,
+        timestamp: Date.now(),
+      };
+      ws.send(JSON.stringify(message));
+    } catch (error) {
+      console.error("[WebSocket] 타이핑 상태 전송 실패:", error);
+    }
   }, [ws, currentRoom]);
 
-  return (
-    <WebSocketContext.Provider
-      value={{
-        isConnected,
-        messages,
-        sendMessage,
-        joinRoom,
-        leaveRoom,
-        setTyping,
-      }}
-    >
-      {children}
-    </WebSocketContext.Provider>
-  );
+  const value: WebSocketContextType = {
+    isConnected,
+    messages,
+    sendMessage,
+    joinRoom,
+    leaveRoom,
+    setTyping,
+  };
+
+  return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>;
 }
 
 export function useWebSocket() {
