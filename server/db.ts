@@ -36,7 +36,7 @@ const mockDb = {
   delete: () => ({ where: () => Promise.resolve() }),
 };
 
-async function getDb() {
+export async function getDb() {
   // Return mock DB for now - will be replaced with real connection
   return mockDb as any;
 }

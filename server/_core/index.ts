@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { setupWebSocket } from "./websocket";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 
@@ -76,6 +77,9 @@ async function startServer() {
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
+
+  // WebSocket 서버 초기화
+  setupWebSocket(server);
 
   server.listen(port, () => {
     console.log(`[api] server listening on port ${port}`);

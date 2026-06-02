@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useAuthContext } from "@/lib/meetory/auth-context";
 
 interface BluetoothLocation {
   id: string;
@@ -58,6 +59,7 @@ const PREDEFINED_LOCATIONS: BluetoothLocation[] = [
 ];
 
 export function BluetoothProvider({ children }: { children: ReactNode }) {
+  const { profile } = useAuthContext();
   const [nearbyLocations, setNearbyLocations] = useState<BluetoothLocation[]>([]);
   const [pendingChatRoom, setPendingChatRoom] = useState<{
     locationId: string;
@@ -65,9 +67,24 @@ export function BluetoothProvider({ children }: { children: ReactNode }) {
   } | null>(null);
 
   const acceptChatRoom = useCallback((locationId: string, locationName: string) => {
-    // 실제 채팅방 생성 로직은 AuthContext에서 처리
+    // 실제 채팅방 생성 - 백엔드 API 호출
+    if (profile && profile.interests && profile.interests.length > 0) {
+      // 사용자의 첫 번째 관심사를 기반으로 채팅방 생성
+      const interest = profile.interests[0];
+      console.log(
+        `[Bluetooth] Creating chat room for location: ${locationName}, interest: ${interest}`
+      );
+
+      // 실제 구현에서는 여기서 tRPC API를 호출하여 채팅방 생성
+      // 현재는 로컬 상태만 업데이트
+      // await trpc.chatRoom.createChatRoom.mutate({
+      //   name: `${locationName} - ${interest}`,
+      //   location: locationName,
+      //   interest,
+      // });
+    }
     setPendingChatRoom(null);
-  }, []);
+  }, [profile]);
 
   const rejectChatRoom = useCallback(() => {
     setPendingChatRoom(null);
@@ -95,7 +112,13 @@ export function BluetoothProvider({ children }: { children: ReactNode }) {
       rejectChatRoom,
       simulateLocationDetection,
     }),
-    [nearbyLocations, pendingChatRoom, acceptChatRoom, rejectChatRoom, simulateLocationDetection],
+    [
+      nearbyLocations,
+      pendingChatRoom,
+      acceptChatRoom,
+      rejectChatRoom,
+      simulateLocationDetection,
+    ]
   );
 
   return (

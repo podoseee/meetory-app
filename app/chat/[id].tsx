@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -17,11 +17,15 @@ import { AIAssistant } from "@/components/meetory/ai-assistant";
 import { AI_SUGGESTIONS, getChatMessages, getRoomName } from "@/lib/meetory/mock-data";
 import type { ChatMessage } from "@/lib/meetory/types";
 import { useColors } from "@/hooks/use-colors";
+import { useWebSocket } from "@/lib/meetory/websocket-context";
+import { useAuthContext } from "@/lib/meetory/auth-context";
 
 export default function ChatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
+  const { profile } = useAuthContext();
+  const { messages: wsMessages, sendMessage: wsSendMessage, joinRoom, leaveRoom, isConnected } = useWebSocket();
   const roomId = id ?? "1";
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatMessages(roomId));
   const [input, setInput] = useState("");
@@ -29,9 +33,24 @@ export default function ChatDetailScreen() {
   const [showAI, setShowAI] = useState(false);
   const listRef = useRef<FlatList>(null);
 
+  // WebSocket 입장
+  useEffect(() => {
+    if (profile) {
+      joinRoom(parseInt(roomId), profile.id || 1, profile.nickname || "익명");
+    }
+    return () => {
+      leaveRoom();
+    };
+  }, [roomId, profile, joinRoom, leaveRoom]);
+
   const send = async () => {
     if (!input.trim()) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // WebSocket으로 메시지 전송
+    wsSendMessage(input.trim());
+    
+    // 로컬 UI 업데이트
     const msg: ChatMessage = {
       id: String(Date.now()),
       nickname: "나",
@@ -50,6 +69,22 @@ export default function ChatDetailScreen() {
     setAiTip(tip);
     setShowAI(true);
   };
+
+  // WebSocket 메시지 추가
+  useEffect(() => {
+    wsMessages.forEach((wsMsg) => {
+      if (wsMsg.type === "message") {
+        const msg: ChatMessage = {
+          id: String(Date.now()),
+          nickname: wsMsg.nickname || "익명",
+          content: wsMsg.content || "",
+          time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+          isOwn: false,
+        };
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+  }, [wsMessages]);
 
   const renderItem = ({ item }: { item: ChatMessage }) => (
     <View className={`flex-row mb-3 gap-2 ${item.isOwn ? "justify-end" : "justify-start"}`}>
@@ -106,17 +141,18 @@ export default function ChatDetailScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="메세지 입력하기..."
+            placeholder={isConnected ? "메세지 입력하기..." : "연결 중..."}
             placeholderTextColor={colors.muted}
             className="flex-1 bg-surface rounded-full px-4 py-3 text-foreground"
             onSubmitEditing={send}
+            editable={isConnected}
           />
           <TouchableOpacity onPress={showAiAdvice} className="w-10 h-10 items-center justify-center">
             <Ionicons name="flash" size={22} color="#7C3AED" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={send}
-            disabled={!input.trim()}
+            disabled={!input.trim() || !isConnected}
             className="w-10 h-10 rounded-full bg-primary items-center justify-center opacity-100 disabled:opacity-40"
           >
             <Ionicons name="send" size={18} color="#fff" />
