@@ -51,7 +51,7 @@ class SocketClient {
           this.emit("disconnected", {});
         });
 
-        this.socket.on("error", (error) => {
+        this.socket.on("error", (error: any) => {
           console.error("Socket error:", error);
           this.emit("error", { error });
         });
