@@ -1,13 +1,27 @@
-import React, { createContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
-import { restClient } from "@/lib/api/rest-client";
+import { restClient, User } from "@/lib/api/rest-client";
+
+/**
+ * 팀원 백엔드 REST API 기반 인증 컨텍스트
+ * 
+ * 데이터 모델:
+ * - User: { id, nickname, profile_img, kakao_id, google_id, bio, is_active }
+ * - 관심사: 별도 API (/users/:id/interests)
+ * - 위치: 별도 API (/users/:id/location) - 좌표 기반 (latitude, longitude)
+ */
 
 export interface UserProfile {
   id: number;
   nickname: string;
   profile_img?: string;
-  interests: string[];
-  location: string;
+  bio?: string;
+  kakao_id?: string;
+  google_id?: string;
+  is_active: boolean;
+  interests?: number[]; // 관심사 ID 배열
+  latitude?: number;
+  longitude?: number;
 }
 
 interface AuthContextType {
@@ -25,8 +39,8 @@ interface AuthContextType {
   // 온보딩
   acceptTerms: () => void;
   saveProfile: (nickname: string, profileImage?: string) => Promise<void>;
-  saveInterests: (interests: string[]) => Promise<void>;
-  saveLocation: (location: string) => Promise<void>;
+  saveInterests: (interestIds: number[]) => Promise<void>;
+  saveLocation: (latitude: number, longitude: number) => Promise<void>;
   completeOnboarding: () => void;
   
   // 프로필 수정
@@ -51,9 +65,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await restClient.setAccessToken(accessToken);
         const profile = await restClient.getUserProfile(parseInt(userId));
         setUser({
-          ...profile,
-          interests: profile.interests || [],
-          location: profile.location || "",
+          id: profile.id,
+          nickname: profile.nickname,
+          profile_img: profile.profile_img,
+          bio: profile.bio,
+          kakao_id: profile.kakao_id,
+          google_id: profile.google_id,
+          is_active: profile.is_active,
+          interests: [],
+          latitude: undefined,
+          longitude: undefined,
         });
         setOnboardingStep("ready");
       } else {
@@ -88,8 +109,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: profile.id,
           nickname: profile.nickname,
           profile_img: profile.profile_img,
-          interests: profile.interests || [],
-          location: profile.location || "",
+          bio: profile.bio,
+          kakao_id: profile.kakao_id,
+          google_id: profile.google_id,
+          is_active: profile.is_active,
+          interests: [],
         });
         setOnboardingStep("ready");
       }
@@ -118,8 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: profile.id,
           nickname: profile.nickname,
           profile_img: profile.profile_img,
-          interests: profile.interests || [],
-          location: profile.location || "",
+          bio: profile.bio,
+          kakao_id: profile.kakao_id,
+          google_id: profile.google_id,
+          is_active: profile.is_active,
+          interests: [],
         });
         setOnboardingStep("ready");
       }
@@ -148,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setOnboardingStep("profile");
   }, []);
 
-  // 프로필 저장
+  // 프로필 저장 (닉네임, 프로필 이미지)
   const saveProfile = useCallback(async (nickname: string, profileImage?: string) => {
     try {
       const userId = await SecureStore.getItemAsync("userId");
@@ -169,14 +196,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // 관심사 저장
-  const saveInterests = useCallback(async (interests: string[]) => {
+  // 관심사 저장 (관심사 ID 배열)
+  const saveInterests = useCallback(async (interestIds: number[]) => {
     try {
       const userId = await SecureStore.getItemAsync("userId");
       if (!userId) throw new Error("User ID not found");
 
-      await restClient.addUserInterests(parseInt(userId), interests);
-      setUser((prev) => (prev ? { ...prev, interests } : null));
+      await restClient.addUserInterests(parseInt(userId), interestIds);
+      setUser((prev) => (prev ? { ...prev, interests: interestIds } : null));
       setOnboardingStep("location");
     } catch (error) {
       console.error("Failed to save interests:", error);
@@ -184,14 +211,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // 지역 저장
-  const saveLocation = useCallback(async (location: string) => {
+  // 지역 저장 (좌표 기반: latitude, longitude)
+  const saveLocation = useCallback(async (latitude: number, longitude: number) => {
     try {
       const userId = await SecureStore.getItemAsync("userId");
       if (!userId) throw new Error("User ID not found");
 
-      await restClient.setUserLocation(parseInt(userId), location);
-      setUser((prev) => (prev ? { ...prev, location } : null));
+      await restClient.setUserLocation(parseInt(userId), latitude, longitude);
+      setUser((prev) => (prev ? { ...prev, latitude, longitude } : null));
       setOnboardingStep("ready");
     } catch (error) {
       console.error("Failed to save location:", error);
@@ -238,12 +265,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuthContext() {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuthContext must be used within AuthProvider");
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
-
-export const useAuth = useAuthContext;

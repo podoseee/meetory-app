@@ -7,6 +7,7 @@ export default function AuthLayout() {
       <Stack.Screen name="terms" />
       <Stack.Screen name="profile-setup" />
       <Stack.Screen name="interests" />
+      <Stack.Screen name="location-setup" />
       <Stack.Screen name="welcome" />
       <Stack.Screen name="chatrooms-ready" />
     </Stack>

@@ -5,7 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { ScreenFooter } from "@/components/meetory/screen-footer";
 import { ScreenContainer } from "@/components/screen-container";
-import { useAuth } from "@/lib/meetory/auth-context";
+import { useAuth } from "@/lib/meetory/auth-context-rest";
+
+/**
+ * 약관 동의 화면
+ * 팀원 백엔드 REST API 기반
+ */
 
 function CheckRow({
   label,
@@ -53,7 +58,8 @@ export default function TermsScreen() {
   };
 
   const handleNext = () => {
-    acceptTerms(marketing);
+    // 약관 동의 처리
+    acceptTerms();
     router.push("/(auth)/profile-setup");
   };
 
