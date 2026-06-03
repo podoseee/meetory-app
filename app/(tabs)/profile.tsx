@@ -41,10 +41,10 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} className="mt-2">
-        <MenuRow label="내 정보 수정" />
-        <MenuRow label="알림 설정" />
-        <MenuRow label="차단한 사용자" />
-        <MenuRow label="이용 가이드" />
+        <MenuRow label="내 정보 수정" onPress={() => router.push('/(tabs)/profile-edit')} />
+        <MenuRow label="알림 설정" onPress={() => Alert.alert('알림 설정', '알림 설정 기능은 준비 중입니다.')} />
+        <MenuRow label="차단한 사용자" onPress={() => Alert.alert('차단한 사용자', '차단한 사용자 목록은 준비 중입니다.')} />
+        <MenuRow label="이용 가이드" onPress={() => Alert.alert('이용 가이드', '관심사 기반으로 자동 매칭되는 소규모 채팅방에 참여하세요!')} />
         <MenuRow label="로그 아웃" onPress={handleLogout} destructive />
       </ScrollView>
     </ScreenContainer>

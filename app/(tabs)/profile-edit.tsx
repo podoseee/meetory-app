@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,7 +45,13 @@ export default function ProfileEditScreen() {
       return;
     }
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== "web") {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        console.warn("Haptics 호출 실패:", e);
+      }
+    }
 
     // 프로필 업데이트
     saveProfile(nickname.trim(), "😊");
